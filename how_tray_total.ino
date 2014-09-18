@@ -20,10 +20,20 @@
  Created by David Cuartielles
  modified 30 Aug 2011
  By Tom Igoe
- 
+ t`
  This example code is in the public domain.
  
  http://arduino.cc/en/Tutorial/AnalogInput
+ 
+  * Pin layout should be as follows:
+ * Signal     Pin              Pin               Pin
+ *            Arduino Uno      Arduino Mega      MFRC522 board
+ * ------------------------------------------------------------
+ * Reset      9                5                 RST
+ * SPI SS     10               53                SDA
+ * SPI MOSI   11               51                MOSI
+ * SPI MISO   12               50                MISO
+ * SPI SCK    13               52                SCK
  
  */
  
@@ -32,8 +42,8 @@
 #include "customer.h";
 
 //RFID ENABLE PIN
-#define SS_PIN_0 10
-#define SS_PIN_1 53
+#define SS_PIN_0 10 //53
+#define SS_PIN_1 8
 #define SS_PIN_2 48
 #define SS_PIN_3 22
 
@@ -43,7 +53,7 @@ int MSG_GLASS_OFF = 1;
 int MSG_GLASS_ON = 2;
 int MSG_BUTTON_ON = 3;
     
-#define RST_PIN 9
+#define RST_PIN 9 //5
 
 #define NUM_CUSTOMERS 1
 
@@ -80,6 +90,7 @@ void setup() {
   //Init RFID readers
   for (int i=0; i<NUM_CUSTOMERS; i++)
   {
+    Serial.println("INIT");
     arrRFID[i].PCD_Init(); 
   }
 }
@@ -113,20 +124,20 @@ void loop() {
   {
 
     //RFID
-    if (!arrCustomer[customerIndex].initRfid)
+    if (true) //!arrCustomer[customerIndex].initRfid)
     {
         arrRFID[customerIndex].ADAM_CARD_ON();
         if ( arrRFID[customerIndex].PICC_IsNewCardPresent())
         {
-           
+           Serial.print("h");
            if ( arrRFID[customerIndex].PICC_ReadCardSerial()) {
                arrCustomer[customerIndex].initRfid = true;
                
-               //Serial.println("CARD ");
+               Serial.println("CARD ");
                _rfid = "";
                for (byte j = 0; j < arrRFID[customerIndex].uid.size; j++) {
                   _rfid += arrRFID[customerIndex].uid.uidByte[j];
-		  //Serial.print(arrRFID[customerIndex].uid.uidByte[j], HEX);
+		  Serial.print(arrRFID[customerIndex].uid.uidByte[j], HEX);
                }
                //Serial.println("");
                
@@ -134,19 +145,13 @@ void loop() {
                sendCommandBack(customerIndex, MSG_RFID, _rfid);
 	    }
         }
-        arrRFID[customerIndex].ADAM_CARD_OFF();
+        //arrRFID[customerIndex].ADAM_CARD_OFF();
     }
 
     //EACH BUTTON
     for (int i=0; i<3; i++) {
     
-      if (arrCustomer[customerIndex].readButtonValue(i)) {
-        /*
-        Serial.print("Button ");
-        Serial.print(i);
-        Serial.print(arrCustomer[customerIndex].btnStatus[i].currentValue);
-        Serial.println("");
-        */
+      if (arrCustomer[customerIndex].readButtonValue(i) && arrCustomer[customerIndex].btnStatus[i].currentValue == 1) {
         
         //Send Command
         sendCommandBack(customerIndex, MSG_BUTTON_ON, String(i));
@@ -157,12 +162,6 @@ void loop() {
     for (int i=0; i<2; i++) {
     
       if (arrCustomer[customerIndex].readSensorValue(i)) {
-        /*
-        Serial.print("Glass ");
-        Serial.print(i);
-        Serial.print(arrCustomer[customerIndex].glassStatus[i].currentValue);
-        Serial.println("");
-        */
         
         //Send Command
         if (arrCustomer[customerIndex].glassStatus[i].currentValue == 1)
@@ -176,7 +175,7 @@ void loop() {
       }
     }
     //Serial.println(i + " " + arrCustomer[0].btnStatus[i].currentValue);
-  
+
   }
   
 }
